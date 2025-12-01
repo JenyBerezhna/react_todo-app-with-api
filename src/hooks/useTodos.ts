@@ -20,12 +20,14 @@ export function useTodos(userId: number) {
     inputRef.current?.focus();
   }, []);
 
+  // Refocus after add
   useEffect(() => {
     if (!tempTodo) {
       focusInput();
     }
   }, [todos, tempTodo, focusInput]);
 
+  // Initial load
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -33,6 +35,7 @@ export function useTodos(userId: number) {
         const list = await getTodos();
 
         setTodos(list);
+        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.LOAD);
       } finally {
@@ -75,6 +78,7 @@ export function useTodos(userId: number) {
 
         setTodos(prev => [...prev, created]);
         setNewTitle('');
+        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.ADD);
       } finally {
@@ -88,10 +92,12 @@ export function useTodos(userId: number) {
   const handleUpdateTodo = useCallback(
     async (id: number, data: Partial<Todo>) => {
       setProcessingIds(ids => [...ids, id]);
+
       try {
         const updated = await updateTodo({ id, ...data });
 
         setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.UPDATE);
       } finally {
@@ -103,15 +109,48 @@ export function useTodos(userId: number) {
 
   const handleDeleteTodo = useCallback(async (id: number) => {
     setProcessingIds(ids => [...ids, id]);
+
     try {
       await deleteTodo(id);
       setTodos(prev => prev.filter(t => t.id !== id));
+      setNotification(null);
     } catch {
       setNotification(ERROR_MESSAGES.DELETE);
     } finally {
       setProcessingIds(ids => ids.filter(x => x !== id));
     }
   }, []);
+
+  const handleToggleAll = useCallback(async () => {
+    const allCompleted = todos.length > 0 && todos.every(t => t.completed);
+    const newStatus = !allCompleted;
+
+    // Only update todos that actually change
+    const todosToUpdate = todos.filter(t => t.completed !== newStatus);
+
+    setProcessingIds(ids => [
+      ...Array.from(new Set([...ids, ...todosToUpdate.map(t => t.id)])),
+    ]);
+
+    try {
+      const updatedTodos = await Promise.all(
+        todosToUpdate.map(todo =>
+          updateTodo({ id: todo.id, completed: newStatus }),
+        ),
+      );
+
+      setTodos(prev =>
+        prev.map(t => updatedTodos.find(u => u.id === t.id) ?? t),
+      );
+      setNotification(null);
+    } catch {
+      setNotification(ERROR_MESSAGES.UPDATE);
+    } finally {
+      setProcessingIds(ids =>
+        ids.filter(id => !todosToUpdate.some(t => t.id === id)),
+      );
+    }
+  }, [todos]);
 
   return {
     todos,
@@ -126,5 +165,6 @@ export function useTodos(userId: number) {
     handleAddTodo,
     handleUpdateTodo,
     handleDeleteTodo,
+    handleToggleAll,
   };
 }

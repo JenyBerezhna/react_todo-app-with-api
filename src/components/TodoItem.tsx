@@ -3,33 +3,39 @@ import { Todo } from '../types/Todo';
 
 interface TodoItemProps {
   todo: Todo;
-  onUpdate: (id: number, data: Partial<Todo>) => Promise<void> | void;
-  onDelete: (id: number) => Promise<void> | void;
-  isTemporary?: boolean;
+  onUpdate: (id: number, data: Partial<Todo>) => void;
+  onDelete: (id: number) => void;
   isProcessing?: boolean;
+  isTemporary?: boolean;
 }
 
 export const TodoItem: React.FC<TodoItemProps> = ({
   todo,
   onUpdate,
   onDelete,
-  isTemporary = false,
   isProcessing = false,
+  isTemporary = false,
 }) => {
   const { id, title, completed } = todo;
 
-  const handleToggle = async () => {
-    await onUpdate(id, { completed: !completed });
+  const handleToggle = () => {
+    onUpdate(id, { completed: !completed });
   };
 
-  const handleDelete = async () => {
-    await onDelete(id);
+  const handleDelete = () => {
+    onDelete(id);
   };
 
   const showLoader = isTemporary || isProcessing;
 
   return (
-    <div data-cy="Todo" className={`todo ${completed ? 'completed' : ''}`}>
+    <li
+      data-cy="Todo"
+      className={`todo ${completed ? 'completed' : ''} ${
+        isProcessing ? 'loading' : ''
+      } ${isTemporary ? 'temp' : ''}`}
+    >
+      {/* Hidden checkbox + styled label */}
       <label
         className="todo__status-label"
         htmlFor={`todo-status-${id}`}
@@ -46,19 +52,23 @@ export const TodoItem: React.FC<TodoItemProps> = ({
         />
       </label>
 
-      <span data-cy="TodoTitle" className="todo__title">
+      {/* Title */}
+      <span className="todo__title" data-cy="TodoTitle">
         {title}
       </span>
 
-      <button
-        type="button"
-        className="todo__remove"
-        data-cy="TodoDelete"
-        onClick={handleDelete}
-        disabled={showLoader}
-      >
-        ×
-      </button>
+      {/* Delete button */}
+      {!isTemporary && (
+        <button
+          type="button"
+          className="todo__remove"
+          data-cy="TodoDelete"
+          onClick={handleDelete}
+          disabled={showLoader}
+        >
+          ×
+        </button>
+      )}
 
       <div
         className={`todo__loader ${showLoader ? 'is-active' : ''}`}
@@ -66,6 +76,6 @@ export const TodoItem: React.FC<TodoItemProps> = ({
       >
         <div className="loader" />
       </div>
-    </div>
+    </li>
   );
 };

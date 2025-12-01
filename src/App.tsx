@@ -38,6 +38,7 @@ export const App: React.FC = () => {
     handleAddTodo,
     handleUpdateTodo,
     handleDeleteTodo,
+    handleToggleAll,
   } = useTodos(USER_ID);
 
   const { error, isVisible, showError, hideError } = useErrorNotification();
@@ -72,6 +73,7 @@ export const App: React.FC = () => {
           setNewTitle={setNewTitle}
           isSubmitting={isSubmitting}
           handleAddTodo={handleAddTodo}
+          handleToggleAll={handleToggleAll}
           inputRef={inputRef}
         />
 

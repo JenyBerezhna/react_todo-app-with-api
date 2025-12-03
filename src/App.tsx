@@ -38,6 +38,7 @@ export const App: React.FC = () => {
     handleAddTodo,
     handleUpdateTodo,
     handleDeleteTodo,
+    handleClearCompleted,
     handleToggleAll,
   } = useTodos(USER_ID);
 
@@ -50,8 +51,10 @@ export const App: React.FC = () => {
   }, [notification, showError]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [todos]);
+    if (!tempTodo) {
+      inputRef.current?.focus();
+    }
+  }, [todos, tempTodo]);
 
   const filteredTodos = selectFilteredTodos(todos, filter);
   const activeTodosCount = selectActiveCount(todos);
@@ -73,8 +76,10 @@ export const App: React.FC = () => {
           setNewTitle={setNewTitle}
           isSubmitting={isSubmitting}
           handleAddTodo={handleAddTodo}
-          handleToggleAll={handleToggleAll}
           inputRef={inputRef}
+          handleToggleAll={handleToggleAll}
+          loading={loading}
+          hasTodos={todos.length > 0}
         />
 
         <TodoMain
@@ -91,6 +96,7 @@ export const App: React.FC = () => {
             filter={filter}
             setFilter={setFilter}
             hasCompletedTodos={hasCompletedTodos}
+            onClearCompleted={handleClearCompleted}
           />
         )}
       </div>

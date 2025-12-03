@@ -16,18 +16,12 @@ export function useTodos(userId: number) {
   const [notification, setNotification] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  /** Focus input when needed */
   const focusInput = useCallback(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Refocus after add
-  useEffect(() => {
-    if (!tempTodo) {
-      focusInput();
-    }
-  }, [todos, tempTodo, focusInput]);
-
-  // Initial load
+  /** Load todos on mount */
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -35,7 +29,6 @@ export function useTodos(userId: number) {
         const list = await getTodos();
 
         setTodos(list);
-        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.LOAD);
       } finally {
@@ -46,10 +39,10 @@ export function useTodos(userId: number) {
     load();
   }, []);
 
+  /** Add new todo */
   const handleAddTodo = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-
       const trimmed = newTitle.trim();
 
       if (!trimmed) {
@@ -78,7 +71,6 @@ export function useTodos(userId: number) {
 
         setTodos(prev => [...prev, created]);
         setNewTitle('');
-        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.ADD);
       } finally {
@@ -89,15 +81,14 @@ export function useTodos(userId: number) {
     [newTitle, userId, focusInput],
   );
 
+  /** Update single todo */
   const handleUpdateTodo = useCallback(
     async (id: number, data: Partial<Todo>) => {
       setProcessingIds(ids => [...ids, id]);
-
       try {
         const updated = await updateTodo({ id, ...data });
 
         setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
-        setNotification(null);
       } catch {
         setNotification(ERROR_MESSAGES.UPDATE);
       } finally {
@@ -107,13 +98,12 @@ export function useTodos(userId: number) {
     [],
   );
 
+  /** Delete single todo */
   const handleDeleteTodo = useCallback(async (id: number) => {
     setProcessingIds(ids => [...ids, id]);
-
     try {
       await deleteTodo(id);
       setTodos(prev => prev.filter(t => t.id !== id));
-      setNotification(null);
     } catch {
       setNotification(ERROR_MESSAGES.DELETE);
     } finally {
@@ -121,34 +111,50 @@ export function useTodos(userId: number) {
     }
   }, []);
 
+  /** Clear all completed todos */
+  const handleClearCompleted = useCallback(async () => {
+    const completed = todos.filter(t => t.completed);
+
+    setProcessingIds(ids => [...ids, ...completed.map(t => t.id)]);
+
+    const results = await Promise.allSettled(
+      completed.map(async todo => {
+        await deleteTodo(todo.id);
+        setTodos(prev => prev.filter(t => t.id !== todo.id));
+        setProcessingIds(ids => ids.filter(x => x !== todo.id));
+      }),
+    );
+
+    if (results.some(r => r.status === 'rejected')) {
+      setNotification(ERROR_MESSAGES.DELETE);
+    }
+  }, [todos]);
+
+  /** Toggle all todos (complete/uncomplete) */
   const handleToggleAll = useCallback(async () => {
-    const allCompleted = todos.length > 0 && todos.every(t => t.completed);
-    const newStatus = !allCompleted;
+    const shouldCompleteAll = !todos.every(t => t.completed);
 
-    // Only update todos that actually change
-    const todosToUpdate = todos.filter(t => t.completed !== newStatus);
+    setProcessingIds(ids => [...ids, ...todos.map(t => t.id)]);
 
-    setProcessingIds(ids => [
-      ...Array.from(new Set([...ids, ...todosToUpdate.map(t => t.id)])),
-    ]);
+    const results = await Promise.allSettled(
+      todos.map(async todo => {
+        try {
+          const updated = await updateTodo({
+            id: todo.id,
+            completed: shouldCompleteAll,
+          });
 
-    try {
-      const updatedTodos = await Promise.all(
-        todosToUpdate.map(todo =>
-          updateTodo({ id: todo.id, completed: newStatus }),
-        ),
-      );
+          setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
+        } catch {
+          setNotification(ERROR_MESSAGES.UPDATE);
+        } finally {
+          setProcessingIds(ids => ids.filter(x => x !== todo.id));
+        }
+      }),
+    );
 
-      setTodos(prev =>
-        prev.map(t => updatedTodos.find(u => u.id === t.id) ?? t),
-      );
-      setNotification(null);
-    } catch {
+    if (results.some(r => r.status === 'rejected')) {
       setNotification(ERROR_MESSAGES.UPDATE);
-    } finally {
-      setProcessingIds(ids =>
-        ids.filter(id => !todosToUpdate.some(t => t.id === id)),
-      );
     }
   }, [todos]);
 
@@ -165,6 +171,7 @@ export function useTodos(userId: number) {
     handleAddTodo,
     handleUpdateTodo,
     handleDeleteTodo,
+    handleClearCompleted,
     handleToggleAll,
   };
 }

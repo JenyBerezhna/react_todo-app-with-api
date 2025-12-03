@@ -5,8 +5,8 @@ import { TodoItem } from './TodoItem';
 interface TodoMainProps {
   todos: Todo[];
   tempTodo?: Todo | null;
-  onUpdateTodo: (id: number, data: Partial<Todo>) => Promise<void> | void;
-  onDeleteTodo: (id: number) => Promise<void> | void;
+  onUpdateTodo: (id: number, data: Partial<Todo>) => void;
+  onDeleteTodo: (id: number) => void;
   processingIds?: number[];
 }
 
@@ -32,12 +32,12 @@ export const TodoMain: React.FC<TodoMainProps> = ({
 
         {tempTodo && (
           <TodoItem
-            key={0} // Temp todo (always id: 0)
+            key="temp"
             todo={tempTodo}
-            isTemporary
-            isProcessing
             onUpdate={onUpdateTodo}
             onDelete={onDeleteTodo}
+            isProcessing={true}
+            isTemporary={true}
           />
         )}
       </ul>

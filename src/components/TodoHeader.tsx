@@ -1,13 +1,15 @@
 import React from 'react';
 
-interface TodoHeaderProps {
+export interface TodoHeaderProps {
   allCompleted: boolean;
   newTitle: string;
   setNewTitle: React.Dispatch<React.SetStateAction<string>>;
   isSubmitting: boolean;
   handleAddTodo: (e: React.FormEvent) => Promise<void>;
-  handleToggleAll: () => Promise<void>;
   inputRef: React.RefObject<HTMLInputElement>;
+  handleToggleAll: () => void;
+  loading: boolean;
+  hasTodos: boolean;
 }
 
 export const TodoHeader: React.FC<TodoHeaderProps> = ({
@@ -16,21 +18,25 @@ export const TodoHeader: React.FC<TodoHeaderProps> = ({
   setNewTitle,
   isSubmitting,
   handleAddTodo,
-  handleToggleAll,
   inputRef,
+  handleToggleAll,
+  hasTodos,
+  loading,
 }) => {
   return (
     <header className="todoapp__header">
-      {/* Toggle All button */}
-      <button
-        type="button"
-        className={`todoapp__toggle-all ${allCompleted ? 'active' : ''}`}
-        onClick={handleToggleAll}
-        data-cy="ToggleAll"
-        aria-label="Toggle all todos"
-      />
+      {hasTodos && !loading && (
+        <button
+          type="button"
+          className={`todoapp__toggle-all ${allCompleted ? 'active' : ''}`}
+          data-cy="ToggleAllButton"
+          onClick={handleToggleAll}
+          aria-pressed={allCompleted}
+        >
+          All
+        </button>
+      )}
 
-      {/* New Todo Field */}
       <form onSubmit={handleAddTodo}>
         <input
           ref={inputRef}
@@ -41,6 +47,7 @@ export const TodoHeader: React.FC<TodoHeaderProps> = ({
           value={newTitle}
           onChange={e => setNewTitle(e.target.value)}
           disabled={isSubmitting}
+          autoFocus
         />
       </form>
     </header>

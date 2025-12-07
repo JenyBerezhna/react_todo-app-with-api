@@ -35,11 +35,21 @@ export const App: React.FC = () => {
     newTitle,
     setNewTitle,
     notification,
+
+    /* CRUD */
     handleAddTodo,
     handleUpdateTodo,
     handleDeleteTodo,
     handleClearCompleted,
     handleToggleAll,
+
+    /* EDITING */
+    editingId,
+    editingTitle,
+    startEditing,
+    changeEditingTitle,
+    cancelEditing,
+    submitEditing,
   } = useTodos(USER_ID);
 
   const { error, isVisible, showError, hideError } = useErrorNotification();
@@ -88,6 +98,12 @@ export const App: React.FC = () => {
           processingIds={processingIds}
           onUpdateTodo={handleUpdateTodo}
           onDeleteTodo={handleDeleteTodo}
+          editingId={editingId}
+          editingTitle={editingTitle}
+          startEditing={startEditing}
+          changeEditingTitle={changeEditingTitle}
+          cancelEditing={cancelEditing}
+          submitEditing={submitEditing}
         />
 
         {todos.length > 0 && (

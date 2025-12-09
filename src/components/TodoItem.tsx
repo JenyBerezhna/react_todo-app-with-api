@@ -40,7 +40,6 @@ export const TodoItem: React.FC<TodoItemProps> = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /* autofocus edit field */
   useEffect(() => {
     if (isEditing) {
       inputRef.current?.focus();
@@ -63,7 +62,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
     await onDelete(id);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyUp = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       submitEditing();
     }
@@ -73,13 +72,8 @@ export const TodoItem: React.FC<TodoItemProps> = ({
     }
   };
 
-  // ignore blur caused by clicking delete or checkbox
-
   const handleBlur = () => {
-    if (editingTitle.trim() !== title) {
-      submitEditing();
-    }
-    // otherwise do nothing, input stays open
+    submitEditing();
   };
 
   return (
@@ -140,7 +134,7 @@ export const TodoItem: React.FC<TodoItemProps> = ({
           type="text"
           value={editingTitle}
           onChange={e => changeEditingTitle(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
           onBlur={handleBlur}
           disabled={showLoader}
         />

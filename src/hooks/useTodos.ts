@@ -93,6 +93,7 @@ export function useTodos(userId: number) {
         setTodos(prev => prev.map(t => (t.id === updated.id ? updated : t)));
       } catch {
         setNotification(ERROR_MESSAGES.UPDATE);
+        throw new Error(ERROR_MESSAGES.UPDATE);
       } finally {
         setProcessingIds(ids => ids.filter(x => x !== id));
       }
@@ -114,6 +115,7 @@ export function useTodos(userId: number) {
         }
       } catch {
         setNotification(ERROR_MESSAGES.DELETE);
+        throw new Error(ERROR_MESSAGES.DELETE);
       } finally {
         setProcessingIds(ids => ids.filter(x => x !== id));
       }
@@ -131,6 +133,9 @@ export function useTodos(userId: number) {
         try {
           await deleteTodo(t.id);
           setTodos(prev => prev.filter(x => x.id !== t.id));
+        } catch {
+          setNotification(ERROR_MESSAGES.DELETE);
+          throw new Error(ERROR_MESSAGES.DELETE);
         } finally {
           setProcessingIds(ids => ids.filter(x => x !== t.id));
         }
@@ -161,6 +166,7 @@ export function useTodos(userId: number) {
           setTodos(prev => prev.map(x => (x.id === updated.id ? updated : x)));
         } catch {
           setNotification(ERROR_MESSAGES.UPDATE);
+          throw new Error(ERROR_MESSAGES.UPDATE);
         } finally {
           setProcessingIds(ids => ids.filter(x => x !== t.id));
         }
@@ -203,20 +209,37 @@ export function useTodos(userId: number) {
 
     // unchanged → do nothing, keep input open
     if (trimmed === todo.title) {
-      return;
-    }
-
-    // empty → delete
-    if (!trimmed) {
-      await handleDeleteTodo(editingId);
       cancelEditing();
 
       return;
     }
 
+    // empty → delete
+    if (!trimmed) {
+      try {
+        setProcessingIds(ids => [...ids, editingId]);
+        await handleDeleteTodo(editingId);
+        cancelEditing(); // only close on succsses
+      } catch {
+        // deletion error already set → keep input open
+      } finally {
+        setProcessingIds(ids => ids.filter(x => x !== editingId));
+      }
+
+      return;
+    }
+
     // update
-    await handleUpdateTodo(editingId, { title: trimmed });
-    cancelEditing();
+    try {
+      setProcessingIds(ids => [...ids, editingId]);
+      await handleUpdateTodo(editingId, { title: trimmed });
+      cancelEditing(); // only close on success
+    } catch {
+      setNotification(ERROR_MESSAGES.UPDATE);
+      // keep input open on failure
+    } finally {
+      setProcessingIds(ids => ids.filter(x => x !== editingId));
+    }
   }, [
     editingId,
     editingTitle,
